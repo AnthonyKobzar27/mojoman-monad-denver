@@ -7,9 +7,11 @@ interface Props {
   sessionId: string;
   /** Optional override base URL (e.g. Vercel production URL) */
   baseUrl?: string;
+  /** Large mode — vertical layout with bigger QR */
+  large?: boolean;
 }
 
-export default function ShareSession({ sessionId, baseUrl }: Props) {
+export default function ShareSession({ sessionId, baseUrl, large }: Props) {
   const [copied, setCopied] = useState(false);
   const [origin, setOrigin] = useState("");
 
@@ -38,6 +40,25 @@ export default function ShareSession({ sessionId, baseUrl }: Props) {
       // Fallback
     }
   };
+
+  if (large) {
+    return (
+      <div className="glass-card p-6 flex flex-col items-center text-center sticky top-8">
+        <p className="text-lg font-semibold text-wii-ink mb-1">Scan to Watch & Bet</p>
+        <p className="text-xs text-wii-muted mb-4">Join the live session</p>
+        <div className="bg-white p-4 rounded-2xl shadow-float mb-4">
+          <QRCodeSVG value={watchUrl} size={240} level="M" />
+        </div>
+        <p className="text-xs text-wii-muted mb-3 truncate max-w-full">{watchUrl}</p>
+        <button
+          onClick={handleCopy}
+          className="px-5 py-2 bg-studio-blue/10 hover:bg-studio-blue/20 text-studio-blue border border-studio-blue/20 rounded-lg text-sm font-medium transition-colors"
+        >
+          {copied ? "Copied!" : "Copy Link"}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="glass-card p-4">

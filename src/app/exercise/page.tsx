@@ -226,7 +226,7 @@ export default function ExercisePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-6xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-semibold text-wii-ink mb-8">Exercise Session</h1>
 
       {stage === "pick" && (
@@ -244,42 +244,48 @@ export default function ExercisePage() {
       )}
 
       {stage === "exercising" && (
-        <div className="space-y-4">
-          {/* Tx status banner — shows during confirmation */}
-          <TxStatusBanner
-            isPending={isCreating}
-            isConfirming={isConfirming}
-            isConfirmed={sessionCreated}
-            hash={createHash}
-          />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-wii-ink">{EXERCISE_LABELS[exerciseType]}</h2>
-              {isStreaming && (
-                <p className="text-sm text-studio-teal">{viewerCount} viewer{viewerCount !== 1 ? "s" : ""} watching</p>
-              )}
-            </div>
-            <button
-              onClick={handleStop}
-              disabled={isResolving || !sessionCreated}
-              className="px-6 py-2 bg-mojo-red hover:bg-mojo-red/90 rounded-xl font-medium text-white transition-colors disabled:opacity-50"
-            >
-              {isResolving ? "Resolving..." : !sessionCreated ? "Warming up..." : "Stop & Submit"}
-            </button>
-          </div>
-          <div className="relative">
-            <ExerciseCamera
-              exerciseType={exerciseType}
-              onKeypoints={processKeypoints}
-              onStreamReady={handleStreamReady}
-              isActive={true}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: camera + controls */}
+          <div className="lg:col-span-2 space-y-4">
+            <TxStatusBanner
+              isPending={isCreating}
+              isConfirming={isConfirming}
+              isConfirmed={sessionCreated}
+              hash={createHash}
             />
-            <ReactionOverlay reactions={reactions} />
+
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-wii-ink">{EXERCISE_LABELS[exerciseType]}</h2>
+                {isStreaming && (
+                  <p className="text-sm text-studio-teal">{viewerCount} viewer{viewerCount !== 1 ? "s" : ""} watching</p>
+                )}
+              </div>
+              <button
+                onClick={handleStop}
+                disabled={isResolving || !sessionCreated}
+                className="px-6 py-2 bg-mojo-red hover:bg-mojo-red/90 rounded-xl font-medium text-white transition-colors disabled:opacity-50"
+              >
+                {isResolving ? "Resolving..." : !sessionCreated ? "Warming up..." : "Stop & Submit"}
+              </button>
+            </div>
+            <div className="relative">
+              <ExerciseCamera
+                exerciseType={exerciseType}
+                onKeypoints={processKeypoints}
+                onStreamReady={handleStreamReady}
+                isActive={true}
+              />
+              <ReactionOverlay reactions={reactions} />
+            </div>
+            <RepCounter reps={reps} target={targetReps} phase={phase} />
           </div>
-          <RepCounter reps={reps} target={targetReps} phase={phase} />
+
+          {/* Right: large QR code */}
           {sessionId !== null && (
-            <ShareSession sessionId={sessionId.toString()} />
+            <div className="lg:col-span-1">
+              <ShareSession sessionId={sessionId.toString()} large />
+            </div>
           )}
         </div>
       )}
