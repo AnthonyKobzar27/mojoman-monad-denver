@@ -233,8 +233,11 @@ export default function ExerciseWalkthrough({ exerciseType, targetReps, onContin
         >
           {/* Pulsing glow */}
           <div className="absolute inset-0 bg-gradient-to-r from-studio-blue via-ring-blue to-studio-teal animate-pulse opacity-50 blur-xl" />
-          <span className="relative">
-            {isLoading ? "Creating Session..." : "UNLEASH THE MOJO"}
+          <span className="relative flex items-center justify-center gap-2">
+            {isLoading && (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            )}
+            {isLoading ? "Confirm in your wallet..." : "UNLEASH THE MOJO"}
           </span>
         </button>
       </div>

@@ -15,6 +15,56 @@ import { ExerciseType, EXERCISE_LABELS, Keypoint } from "@/types";
 
 type Stage = "pick" | "walkthrough" | "exercising" | "done";
 
+function TxStatusBanner({ isPending, isConfirming, isConfirmed, hash }: {
+  isPending: boolean;
+  isConfirming: boolean;
+  isConfirmed: boolean;
+  hash?: string;
+}) {
+  if (!isPending && !isConfirming && !isConfirmed) return null;
+
+  const step = isPending ? 0 : isConfirming ? 1 : 2;
+  const steps = [
+    { label: "Confirm in wallet", done: step > 0 },
+    { label: "Confirming on Monad", done: step > 1 },
+    { label: "Session live!", done: step >= 2 },
+  ];
+
+  if (isConfirmed) {
+    return (
+      <div className="bg-mojo-green/10 border border-mojo-green/30 rounded-xl px-4 py-2 flex items-center gap-2">
+        <span className="text-mojo-green text-sm font-medium">Session confirmed on-chain</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-studio-blue/5 border border-studio-blue/20 rounded-xl px-4 py-3">
+      <div className="flex items-center gap-3">
+        {steps.map((s, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            {s.done ? (
+              <div className="w-4 h-4 rounded-full bg-mojo-green flex items-center justify-center">
+                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            ) : i === step ? (
+              <div className="w-4 h-4 border-2 border-studio-blue border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <div className="w-4 h-4 rounded-full bg-wii-glass" />
+            )}
+            <span className={`text-xs ${i === step ? "text-studio-blue font-medium" : s.done ? "text-mojo-green" : "text-wii-muted"}`}>
+              {s.label}
+            </span>
+            {i < 2 && <span className="text-wii-glass mx-1">—</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ExercisePage() {
   const { address, isConnected } = useAccount();
   const [stage, setStage] = useState<Stage>("pick");
@@ -23,7 +73,7 @@ export default function ExercisePage() {
   const [sessionId, setSessionId] = useState<bigint | null>(null);
 
   const { reps, phase, processKeypoints, reset } = useExerciseCounter(exerciseType);
-  const { createSession, isPending: isCreating, isSuccess: sessionCreated, hash: createHash, sessionId: createdSessionId } = useCreateSession();
+  const { createSession, isPending: isCreating, isConfirming, isSuccess: sessionCreated, hash: createHash, sessionId: createdSessionId } = useCreateSession();
   const { resolveSession, isPending: isResolving, isSuccess: sessionResolved } = useResolveSession();
   const { syncStats } = useSyncStats();
   const { fighter } = useMyFighter();
@@ -62,12 +112,19 @@ export default function ExercisePage() {
     createSession(exerciseType, BigInt(targetReps));
   }, [isConnected, createSession, exerciseType, targetReps]);
 
+  // Optimistic: go to exercising as soon as wallet signs (hash exists)
   useEffect(() => {
-    if (sessionCreated && stage === "walkthrough" && createdSessionId !== undefined) {
-      setSessionId(createdSessionId);
+    if (createHash && stage === "walkthrough") {
       setStage("exercising");
     }
-  }, [sessionCreated, stage, createdSessionId]);
+  }, [createHash, stage]);
+
+  // Set the real session ID once tx confirms
+  useEffect(() => {
+    if (sessionCreated && createdSessionId !== undefined) {
+      setSessionId(createdSessionId);
+    }
+  }, [sessionCreated, createdSessionId]);
 
   const handleStreamReady = useCallback(
     (stream: MediaStream) => {
@@ -163,6 +220,14 @@ export default function ExercisePage() {
 
       {stage === "exercising" && (
         <div className="space-y-4">
+          {/* Tx status banner — shows during confirmation */}
+          <TxStatusBanner
+            isPending={isCreating}
+            isConfirming={isConfirming}
+            isConfirmed={sessionCreated}
+            hash={createHash}
+          />
+
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-wii-ink">{EXERCISE_LABELS[exerciseType]}</h2>
@@ -172,10 +237,10 @@ export default function ExercisePage() {
             </div>
             <button
               onClick={handleStop}
-              disabled={isResolving}
+              disabled={isResolving || !sessionCreated}
               className="px-6 py-2 bg-mojo-red hover:bg-mojo-red/90 rounded-xl font-medium text-white transition-colors disabled:opacity-50"
             >
-              {isResolving ? "Resolving..." : "Stop & Submit"}
+              {isResolving ? "Resolving..." : !sessionCreated ? "Warming up..." : "Stop & Submit"}
             </button>
           </div>
           <ExerciseCamera
