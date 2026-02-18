@@ -148,9 +148,21 @@ export default function ExercisePage() {
     stopBroadcasting();
     if (sessionId !== null && isConnected) {
       resolveSession(sessionId, BigInt(reps));
+      // Save to DB immediately so leaderboard updates right away
+      fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: sessionId.toString(),
+          exerciser: address,
+          exerciseType,
+          targetReps,
+          actualReps: reps,
+        }),
+      }).catch((err) => console.error("Failed to save session:", err));
     }
     setStage("done");
-  }, [sessionId, reps, isConnected, resolveSession, stopBroadcasting]);
+  }, [sessionId, reps, isConnected, address, exerciseType, targetReps, resolveSession, stopBroadcasting]);
 
   const handleSyncFighter = useCallback(() => {
     if (sessionId !== null) {
