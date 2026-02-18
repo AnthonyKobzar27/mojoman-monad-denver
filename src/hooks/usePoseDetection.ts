@@ -23,25 +23,29 @@ export function usePoseDetection() {
         await import("@tensorflow/tfjs-backend-webgl");
         await tf.setBackend("webgl");
         await tf.ready();
-      } catch {
-        console.warn("WebGL backend failed, falling back to CPU");
+        console.log("TF backend: webgl");
+      } catch (webglErr) {
+        console.warn("WebGL backend failed, falling back to CPU", webglErr);
         await import("@tensorflow/tfjs-backend-cpu");
         await tf.setBackend("cpu");
         await tf.ready();
+        console.log("TF backend: cpu");
       }
 
       const poseDetection = await import("@tensorflow-models/pose-detection");
+      console.log("Creating MoveNet detector...");
       const detector = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
         {
           modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
         }
       );
+      console.log("MoveNet detector created successfully");
       detectorRef.current = detector;
       setIsLoading(false);
     } catch (err) {
-      console.warn("Model load failed, retrying once...", err);
-      // Retry once after 1s
+      console.error("Model load failed:", err);
+      // Retry once after 1s with CPU backend
       try {
         await new Promise((r) => setTimeout(r, 1000));
         const tf = await import("@tensorflow/tfjs-core");
@@ -56,9 +60,11 @@ export function usePoseDetection() {
             modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
           }
         );
+        console.log("MoveNet detector created on retry (CPU)");
         detectorRef.current = detector;
         setIsLoading(false);
       } catch (retryErr) {
+        console.error("Model retry also failed:", retryErr);
         setError(
           retryErr instanceof Error ? retryErr.message : "Failed to load model"
         );
